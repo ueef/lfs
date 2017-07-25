@@ -1,0 +1,17 @@
+{
+  "name": "ueef/lfs",
+  "type": "library",
+  "require": {
+    "php": "7.*",
+    "ueef/assignable": "*"
+  },
+  "require-dev": {
+    "tracy/tracy": "^2.4",
+    "phpunit/phpunit": "^6.2"
+  },
+  "autoload": {
+    "psr-4": {
+      "Ueef\\Lfs\\": "src"
+    }
+  }
+}
