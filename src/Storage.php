@@ -2,10 +2,10 @@
 
 namespace Ueef\Lfs {
 
-    use Ueef\Lfs\Exceptions\CantLinkException;
-    use Ueef\Lfs\Exceptions\CantMakeDirectoryException;
-    use Ueef\Lfs\Exceptions\NotExistsException;
     use Ueef\Lfs\Interfaces\StorageInterface;
+    use Ueef\Lfs\Exceptions\CantLinkException;
+    use Ueef\Lfs\Exceptions\NotExistsException;
+    use Ueef\Lfs\Exceptions\CantMakeDirectoryException;
 
     class Storage implements StorageInterface
     {
