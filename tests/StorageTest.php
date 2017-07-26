@@ -41,16 +41,16 @@ final class StorageTest extends TestCase
 
     private function delTree($dir)
     {
-        $files = array_diff(scandir($dir), array('.','..'));
+        $files = array_diff(scandir($dir), ['.','..']);
         foreach ($files as $file) {
-            (is_dir("$dir/$file")) ? $this->delTree("$dir/$file") : unlink("$dir/$file");
+            if (is_dir($dir/$file)) {
+                $this->delTree("$dir/$file");
+            } else {
+                unlink("$dir/$file");
+            }
         }
-        return rmdir($dir);
-    }
 
-    public function keyProvider()
-    {
-        return [['r22fg'], ['fdgw342gsdfsdf'], [null], [false], [53234356]];
+        return rmdir($dir);
     }
 
     public function testCannotStoreNonexistentFile(): void
@@ -68,26 +68,27 @@ final class StorageTest extends TestCase
         $this->storage->store($this->file_to_store);
     }
 
-    /**
-     * @dataProvider keyProvider
-     */
-    public function testKeyCannotBeNotStringAndNotEqual8($key)
+    public function testKeyIsNotEmptyString()
     {
-        $this->expectException(Throwable::class);
-        $this->storage->getUrl($key);
+        $key = $this->storage->store($this->file_to_store);
+        $this->assertInternalType('string', $key);
+        $this->assertNotEmpty($key);
+
+        return $key;
     }
 
-    public function testGoodKey()
+    public function testUrlIsNotEmptyString($key)
     {
-        $key = 'df954ftc';
-        $this->assertEquals(8, strlen($key));
-        $this->storage->getUrl($key);
+        $url = $this->storage->getUrl($key);
+        $this->assertInternalType('string', $url);
+        $this->assertNotEmpty($url);
     }
 
-    public function testUrlIsSuffixOfPath()
+    public function testPathIsNotEmptyString($key)
     {
-        $key = 'df954ftc';
-        $this->assertStringEndsWith($this->storage->getUrl($key), $this->storage->getPath($key));
+        $path = $this->storage->getPath($key);
+        $this->assertInternalType('string', $path);
+        $this->assertNotEmpty($path);
     }
 
     public function testPathIsHardLinkOfOriginFile()
