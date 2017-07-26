@@ -95,18 +95,5 @@ final class StorageTest extends TestCase
         $path = self::$storage->getPath($key);
         $this->assertInternalType('string', $path);
         $this->assertNotEmpty($path);
-
-        return $path;
-    }
-
-    /**
-     * @depends testPathIsNotEmptyString
-     */
-    public function testPathIsHardLinkOfOriginFile($pathOfStoredFile)
-    {
-        $inodeOfOriginalFile = stat(self::$file_to_store)['ino'];
-        $inodeOfStoredFile = stat($pathOfStoredFile)['ino'];
-
-        $this->assertEquals($inodeOfOriginalFile, $inodeOfStoredFile);
     }
 }
