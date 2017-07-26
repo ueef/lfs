@@ -4,6 +4,7 @@ namespace Ueef\Lfs {
 
     use Throwable;
     use Ueef\Lfs\Interfaces\StorageInterface;
+    use Ueef\Lfs\Exceptions\WrongKeyException;
     use Ueef\Lfs\Exceptions\CantLinkException;
     use Ueef\Lfs\Exceptions\NotExistsException;
     use Ueef\Lfs\Exceptions\CantMakeDirectoryException;
@@ -12,6 +13,7 @@ namespace Ueef\Lfs {
     {
         const MODE = 0755;
         const KEY_LENGTH = 6;
+        const KEY_ENCODED_LENGTH = 8;
         const TRIES_LIMIT = 256;
 
         /**
@@ -51,6 +53,10 @@ namespace Ueef\Lfs {
 
         public function getUrl(string $key): string
         {
+            if (strlen($key) != self::KEY_ENCODED_LENGTH) {
+                throw new WrongKeyException(['Wrong key "%s" required length is "%s"', $key, self::KEY_ENCODED_LENGTH]);
+            }
+
             return preg_replace('/(.{2})(.{2})(.+)/', '/$1/$2/$3', $key);
         }
 
