@@ -43,7 +43,7 @@ final class StorageTest extends TestCase
     {
         $files = array_diff(scandir($dir), ['.','..']);
         foreach ($files as $file) {
-            if (is_dir($dir/$file)) {
+            if (is_dir("$dir/$file")) {
                 $this->delTree("$dir/$file");
             } else {
                 unlink("$dir/$file");
@@ -56,7 +56,6 @@ final class StorageTest extends TestCase
     public function testCannotStoreNonexistentFile(): void
     {
         $this->expectException(NotExistsException::class);
-
         $this->storage->store(uniqid());
     }
 
@@ -77,6 +76,9 @@ final class StorageTest extends TestCase
         return $key;
     }
 
+    /**
+     * @depends testKeyIsNotEmptyString
+     */
     public function testUrlIsNotEmptyString($key)
     {
         $url = $this->storage->getUrl($key);
@@ -84,6 +86,9 @@ final class StorageTest extends TestCase
         $this->assertNotEmpty($url);
     }
 
+    /**
+     * @depends testKeyIsNotEmptyString
+     */
     public function testPathIsNotEmptyString($key)
     {
         $path = $this->storage->getPath($key);
@@ -91,6 +96,9 @@ final class StorageTest extends TestCase
         $this->assertNotEmpty($path);
     }
 
+    /**
+     * @depends testPathIsNotEmptyString
+     */
     public function testPathIsHardLinkOfOriginFile()
     {
         $inodeOfOriginalFile = stat($this->file_to_store)['ino'];
