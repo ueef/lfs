@@ -25,7 +25,7 @@ final class StorageTest extends TestCase
     public function setUp()
     {
         $this->root_dir = sys_get_temp_dir() . '/storage';
-        $this->file_to_store = $this->root_dir . 'file_to_store';
+        $this->file_to_store = sys_get_temp_dir() . '/file_to_store';
 
         mkdir($this->root_dir, 0755, true);
         touch($this->file_to_store);
