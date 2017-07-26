@@ -2,6 +2,7 @@
 
 namespace Ueef\Lfs {
 
+    use Throwable;
     use Ueef\Lfs\Interfaces\StorageInterface;
     use Ueef\Lfs\Exceptions\CantLinkException;
     use Ueef\Lfs\Exceptions\NotExistsException;
@@ -60,8 +61,16 @@ namespace Ueef\Lfs {
             if ($makeDir) {
                 $dir = dirname($path);
 
-                if (!is_dir($dir) && !mkdir($dir, self::MODE, true)) {
-                    throw new CantMakeDirectoryException(['Can\'t make directory "%s"', $dir]);
+                if (!is_dir($dir)) {
+                    try {
+                        $success = mkdir($dir, self::MODE, true);
+                    } catch (Throwable $e) {
+                        $success = false;
+                    }
+
+                    if (!$success) {
+                        throw new CantMakeDirectoryException(['Can\'t make directory "%s"', $dir]);
+                    }
                 }
             }
 
