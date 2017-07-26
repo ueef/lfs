@@ -14,37 +14,37 @@ final class StorageTest extends TestCase
     /**
      * @var \Ueef\Lfs\Storage
      */
-    private $storage;
+    private static $storage;
 
     /** @var string */
-    private $root_dir;
+    private static $root_dir;
 
     /** @var string */
-    private $file_to_store;
+    private static $file_to_store;
 
-    public function setUp()
+    public static function setUpBeforeClass()
     {
-        $this->root_dir = sys_get_temp_dir() . '/storage';
-        $this->file_to_store = sys_get_temp_dir() . '/file_to_store';
+        self::$root_dir = sys_get_temp_dir() . '/storage';
+        self::$file_to_store = sys_get_temp_dir() . '/file_to_store';
 
-        mkdir($this->root_dir, 0755, true);
-        touch($this->file_to_store);
+        mkdir(self::$root_dir, 0755, true);
+        touch(self::$file_to_store);
 
-        $this->storage = new Storage($this->root_dir);
+        self::$storage = new Storage(self::$root_dir);
     }
 
-    public function tearDown()
+    public static function tearDownAfterClass()
     {
-        $this->delTree($this->root_dir);
-        unlink($this->file_to_store);
+        self::delTree(self::$root_dir);
+        unlink(self::$file_to_store);
     }
 
-    private function delTree($dir)
+    private static function delTree($dir)
     {
         $files = array_diff(scandir($dir), ['.','..']);
         foreach ($files as $file) {
             if (is_dir("$dir/$file")) {
-                $this->delTree("$dir/$file");
+                self::delTree("$dir/$file");
             } else {
                 unlink("$dir/$file");
             }
@@ -56,20 +56,21 @@ final class StorageTest extends TestCase
     public function testCannotStoreNonexistentFile(): void
     {
         $this->expectException(NotExistsException::class);
-        $this->storage->store(uniqid());
+        self::$storage->store(uniqid());
     }
 
     public function testCannotStoreInRootDirWithoutPermission(): void
     {
-        chmod($this->root_dir, 0444);
+        chmod(self::$root_dir, 0444);
         $this->expectException(CantMakeDirectoryException::class);
 
-        $this->storage->store($this->file_to_store);
+        self::$storage->store(self::$file_to_store);
     }
 
     public function testKeyIsNotEmptyString()
     {
-        $key = $this->storage->store($this->file_to_store);
+        chmod(self::$root_dir, 0755);
+        $key = self::$storage->store(self::$file_to_store);
         $this->assertInternalType('string', $key);
         $this->assertNotEmpty($key);
 
@@ -81,7 +82,7 @@ final class StorageTest extends TestCase
      */
     public function testUrlIsNotEmptyString($key)
     {
-        $url = $this->storage->getUrl($key);
+        $url = self::$storage->getUrl($key);
         $this->assertInternalType('string', $url);
         $this->assertNotEmpty($url);
     }
@@ -91,19 +92,19 @@ final class StorageTest extends TestCase
      */
     public function testPathIsNotEmptyString($key)
     {
-        $path = $this->storage->getPath($key);
+        $path = self::$storage->getPath($key);
         $this->assertInternalType('string', $path);
         $this->assertNotEmpty($path);
+
+        return $path;
     }
 
     /**
      * @depends testPathIsNotEmptyString
      */
-    public function testPathIsHardLinkOfOriginFile()
+    public function testPathIsHardLinkOfOriginFile($pathOfStoredFile)
     {
-        $inodeOfOriginalFile = stat($this->file_to_store)['ino'];
-        $keyOfStoredFile = $this->storage->store($this->file_to_store);
-        $pathOfStoredFile = $this->storage->getPath($keyOfStoredFile);
+        $inodeOfOriginalFile = stat(self::$file_to_store)['ino'];
         $inodeOfStoredFile = stat($pathOfStoredFile)['ino'];
 
         $this->assertEquals($inodeOfOriginalFile, $inodeOfStoredFile);
