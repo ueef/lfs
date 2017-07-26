@@ -16,9 +16,27 @@ final class StorageTest extends TestCase
      */
     private $storage;
 
+    /** @var string */
+    private $root_dir;
+
+    /** @var string */
+    private $file_to_store;
+
     public function setUp()
     {
-        $this->storage = new Storage(sys_get_temp_dir());
+        $this->root_dir = sys_get_temp_dir() . '/storage';
+        $this->file_to_store = $this->root_dir . 'file_to_store';
+
+        mkdir($this->root_dir, 0755, true);
+        touch($this->file_to_store);
+
+        $this->storage = new Storage($this->root_dir);
+    }
+
+    public function tearDown()
+    {
+        rmdir($this->root_dir);
+        unlink($this->file_to_store);
     }
 
     public function testCannotStoreNonexistentFile(): void
@@ -30,14 +48,9 @@ final class StorageTest extends TestCase
 
     public function testCannotStoreInRootDirWithoutPermission(): void
     {
-        $rootDir = sys_get_temp_dir() . '/storage';
-        mkdir($rootDir, 0444, true);
-        $fileToStore = sys_get_temp_dir() . '/file_to_store';
-        touch($fileToStore);
-
+        chmod($this->root_dir, 0444);
         $this->expectException(CantMakeDirectoryException::class);
 
-        $storage = new Storage($rootDir);
-        $storage->store($fileToStore);
+        $this->storage->store($this->file_to_store);
     }
 }
