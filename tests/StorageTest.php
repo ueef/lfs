@@ -84,5 +84,19 @@ final class StorageTest extends TestCase
         $this->storage->getUrl($key);
     }
 
+    public function testUrlIsSuffixOfPath()
+    {
+        $key = 'df954ftc';
+        $this->assertStringEndsWith($this->storage->getUrl($key), $this->storage->getPath($key));
+    }
 
+    public function testPathIsHardLinkOfOriginFile()
+    {
+        $inodeOfOriginalFile = stat($this->file_to_store)['ino'];
+        $keyOfStoredFile = $this->storage->store($this->file_to_store);
+        $pathOfStoredFile = $this->storage->getPath($keyOfStoredFile);
+        $inodeOfStoredFile = stat($pathOfStoredFile)['ino'];
+
+        $this->assertEquals($inodeOfOriginalFile, $inodeOfStoredFile);
+    }
 }
