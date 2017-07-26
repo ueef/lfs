@@ -35,8 +35,22 @@ final class StorageTest extends TestCase
 
     public function tearDown()
     {
-        rmdir($this->root_dir);
+        $this->delTree($this->root_dir);
         unlink($this->file_to_store);
+    }
+
+    private function delTree($dir)
+    {
+        $files = array_diff(scandir($dir), array('.','..'));
+        foreach ($files as $file) {
+            (is_dir("$dir/$file")) ? $this->delTree("$dir/$file") : unlink("$dir/$file");
+        }
+        return rmdir($dir);
+    }
+
+    public function keyProvider()
+    {
+        return [['r22fg'], ['fdgw342gsdfsdf'], [null], [false], [53234356]];
     }
 
     public function testCannotStoreNonexistentFile(): void
@@ -53,4 +67,22 @@ final class StorageTest extends TestCase
 
         $this->storage->store($this->file_to_store);
     }
+
+    /**
+     * @dataProvider keyProvider
+     */
+    public function testKeyCannotBeNotStringAndNotEqual8($key)
+    {
+        $this->expectException(Throwable::class);
+        $this->storage->getUrl($key);
+    }
+
+    public function testGoodKey()
+    {
+        $key = 'df954ftc';
+        $this->assertEquals(8, strlen($key));
+        $this->storage->getUrl($key);
+    }
+
+
 }
