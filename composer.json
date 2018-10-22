@@ -3,7 +3,8 @@
   "type": "library",
   "require": {
     "php": "7.*",
-    "ueef/assignable": "*"
+    "ueef/assignable": "*",
+    "ueef/exceptions": "^0.0"
   },
   "require-dev": {
     "phpunit/phpunit": "^6.2"

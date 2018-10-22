@@ -2,13 +2,10 @@
 declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
-use Ueef\Lfs\Exceptions\CantMakeDirectoryException;
+use Ueef\Lfs\Exceptions\CannotCreateDirectoryException;
 use Ueef\Lfs\Storage;
-use Ueef\Lfs\Exceptions\NotExistsException;
+use Ueef\Lfs\Exceptions\DoesNotExistException;
 
-/**
- * @covers Email
- */
 final class StorageTest extends TestCase
 {
     /**
@@ -21,6 +18,7 @@ final class StorageTest extends TestCase
 
     /** @var string */
     private static $file_to_store;
+
 
     public static function setUpBeforeClass()
     {
@@ -55,14 +53,14 @@ final class StorageTest extends TestCase
 
     public function testCannotStoreNonexistentFile(): void
     {
-        $this->expectException(NotExistsException::class);
+        $this->expectException(DoesNotExistException::class);
         self::$storage->store(uniqid());
     }
 
     public function testCannotStoreInRootDirWithoutPermission(): void
     {
         chmod(self::$root_dir, 0444);
-        $this->expectException(CantMakeDirectoryException::class);
+        $this->expectException(CannotCreateDirectoryException::class);
 
         self::$storage->store(self::$file_to_store);
     }

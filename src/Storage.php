@@ -1,101 +1,75 @@
 <?php
 
-namespace Ueef\Lfs {
+namespace Ueef\Lfs;
 
-    use Throwable;
-    use Ueef\Lfs\Interfaces\StorageInterface;
-    use Ueef\Lfs\Exceptions\WrongKeyException;
-    use Ueef\Lfs\Exceptions\CantLinkException;
-    use Ueef\Lfs\Exceptions\NotExistsException;
-    use Ueef\Lfs\Exceptions\CantMakeDirectoryException;
+use Ueef\Lfs\Exceptions\CannotCreateDirectoryException;
+use Ueef\Lfs\Exceptions\CannotLinkException;
+use Ueef\Lfs\Exceptions\DoesNotExistException;
+use Ueef\Lfs\Exceptions\Exception;
+use Ueef\Lfs\Interfaces\StorageInterface;
 
-    class Storage implements StorageInterface
+class Storage implements StorageInterface
+{
+    /** @var string */
+    private $root_dir;
+
+    /** @var integer */
+    private $key_length;
+
+    /** @var integer */
+    private $creation_mode;
+
+
+    public function __construct(string $rootDir, int $keyLength = 12, int $creationMode = 0755)
     {
-        const MODE = 0755;
-        const KEY_LENGTH = 6;
-        const KEY_ENCODED_LENGTH = 8;
-        const TRIES_LIMIT = 256;
+        $this->root_dir = $this->correctPath($rootDir);
+        $this->key_length = $keyLength;
+        $this->creation_mode = $creationMode;
+    }
 
-        /**
-         * @var string
-         */
-        private $dir;
-
-
-        public function __construct(string $dir)
-        {
-            $this->dir = $this->correctPath($dir);
+    public function store(string $srcPath): string
+    {
+        if (!file_exists($srcPath)) {
+            throw new DoesNotExistException(["file \"%s\" doesn't exist", $srcPath]);
         }
 
-        public function store(string $tmpPath): string
-        {
-            if (!file_exists($tmpPath)) {
-                throw new NotExistsException(['Path "%s" doesn\'t exist', $tmpPath]);
-            }
+        $key = $this->generateKey();
+        $dstPath = $this->getPath($key);
+        $dirPath = dirname($dstPath);
 
-            while (true) {
-                static $triesCount = 0;
-
-                $key = $this->buildKey();
-                $path = $this->getPath($key, true);
-
-                if (link($tmpPath, $path)) {
-                    return $key;
-                }
-
-                $triesCount++;
-
-                if ($triesCount > self::TRIES_LIMIT) {
-                    throw new CantLinkException(['Can\'t link "%s" to "%s"', $tmpPath, $path]);
-                }
-            }
+        if (!is_dir($dirPath) && !@mkdir($dirPath, $this->creation_mode, true) && !is_dir($dirPath)) {
+            throw new CannotCreateDirectoryException(["can't created directory \"%s\"", $dirPath]);
         }
 
-        public function getUrl(string $key): string
-        {
-            if (strlen($key) != self::KEY_ENCODED_LENGTH) {
-                throw new WrongKeyException(['Wrong key "%s" required length is "%s"', $key, self::KEY_ENCODED_LENGTH]);
-            }
-
-            return preg_replace('/(.{2})(.{2})(.+)/', '/$1/$2/$3', $key);
+        if (!@link($srcPath, $dstPath)) {
+            throw new CannotLinkException(["can't link \"%s\" to \"%s\"", $srcPath, $dstPath]);
         }
 
-        public function getPath(string $key, bool $makeDir = false): string
-        {
-            $path = $this->dir . $this->getUrl($key);
+        return $key;
+    }
 
-            if ($makeDir) {
-                $dir = dirname($path);
+    public function getUrl(string $key): string
+    {
+        return preg_replace('/^(.{2})(.{2})(.+)$/', '/$1/$2/$3', $key);
+    }
 
-                if (!is_dir($dir)) {
-                    try {
-                        $success = mkdir($dir, self::MODE, true);
-                    } catch (Throwable $e) {
-                        $success = false;
-                    }
+    public function getPath(string $key): string
+    {
+        return $this->root_dir . $this->getUrl($key);
+    }
 
-                    if (!$success) {
-                        throw new CantMakeDirectoryException(['Can\'t make directory "%s"', $dir]);
-                    }
-                }
-            }
+    private function generateKey(): string
+    {
+        $key = random_bytes($this->key_length);
+        $key = base64_encode($key);
+        $key = strtr($key, '+/', '-_');
+        $key = rtrim($key, '=');
 
-            return $path;
-        }
+        return $key;
+    }
 
-        private function buildKey()
-        {
-            $key = random_bytes(self::KEY_LENGTH);
-            $key = base64_encode($key);
-            $key = strtr($key, '+/', '-_');
-            $key = rtrim($key, '=');
-
-            return $key;
-        }
-
-        private function correctPath(string $path)
-        {
-            return '/' . trim($path, '/');
-        }
+    private function correctPath(string $path): string
+    {
+        return '/' . trim($path, '/');
     }
 }
