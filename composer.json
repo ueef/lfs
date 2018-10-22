@@ -1,6 +1,8 @@
 {
   "name": "ueef/lfs",
   "type": "library",
+  "license": "MIT",
+  "description": "",
   "require": {
     "php": "7.*",
     "ueef/assignable": "*",
