@@ -64,9 +64,7 @@ class Storage implements StorageInterface
     private function generateKey(): string
     {
         $key = random_bytes($this->key_length);
-        $key = base64_encode($key);
-        $key = strtr($key, '+/', '-_');
-        $key = rtrim($key, '=');
+        $key = bin2hex($key);
 
         return $key;
     }
