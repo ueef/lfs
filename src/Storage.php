@@ -2,16 +2,18 @@
 
 namespace Ueef\Lfs;
 
-use Ueef\Lfs\Exceptions\CannotCreateDirectoryException;
-use Ueef\Lfs\Exceptions\CannotLinkException;
-use Ueef\Lfs\Exceptions\DoesNotExistException;
-use Ueef\Lfs\Exceptions\Exception;
 use Ueef\Lfs\Interfaces\StorageInterface;
+use Ueef\Lfs\Exceptions\CannotLinkException;
+use Ueef\Lfs\Exceptions\FileDoesNotExistException;
+use Ueef\Lfs\Exceptions\CannotCreateDirectoryException;
 
 class Storage implements StorageInterface
 {
     /** @var string */
-    private $root_dir;
+    private $root;
+
+    /** @var string */
+    private $dir;
 
     /** @var integer */
     private $key_length;
@@ -20,9 +22,10 @@ class Storage implements StorageInterface
     private $creation_mode;
 
 
-    public function __construct(string $rootDir, int $keyLength = 12, int $creationMode = 0755)
+    public function __construct(string $root, string $dir, int $keyLength = 12, int $creationMode = 0755)
     {
-        $this->root_dir = $this->correctPath($rootDir);
+        $this->dir = $this->correctPath($dir);
+        $this->root = $this->correctPath($root);
         $this->key_length = $keyLength;
         $this->creation_mode = $creationMode;
     }
@@ -30,19 +33,19 @@ class Storage implements StorageInterface
     public function store(string $srcPath): string
     {
         if (!file_exists($srcPath)) {
-            throw new DoesNotExistException(["file \"%s\" doesn't exist", $srcPath]);
+            throw new FileDoesNotExistException(["file \"%s\" doesn't exist", $srcPath]);
         }
 
         $key = $this->generateKey();
         $dstPath = $this->getPath($key);
-        $dirPath = dirname($dstPath);
 
+        $dirPath = dirname($dstPath);
         if (!is_dir($dirPath) && !@mkdir($dirPath, $this->creation_mode, true) && !is_dir($dirPath)) {
-            throw new CannotCreateDirectoryException(["can't created directory \"%s\"", $dirPath]);
+            throw new CannotCreateDirectoryException(["cannot created directory \"%s\"", $dirPath]);
         }
 
         if (!@link($srcPath, $dstPath)) {
-            throw new CannotLinkException(["can't link \"%s\" to \"%s\"", $srcPath, $dstPath]);
+            throw new CannotLinkException(["cannot link \"%s\" to \"%s\"", $srcPath, $dstPath]);
         }
 
         return $key;
@@ -50,12 +53,12 @@ class Storage implements StorageInterface
 
     public function getUrl(string $key): string
     {
-        return preg_replace('/^(.{2})(.{2})(.+)$/', '/$1/$2/$3', $key);
+        return $this->dir . preg_replace('/^(.{2})(.{2})(.+)$/', '/$1/$2/$3', $key);
     }
 
     public function getPath(string $key): string
     {
-        return $this->root_dir . $this->getUrl($key);
+        return $this->root . $this->getUrl($key);
     }
 
     private function generateKey(): string
