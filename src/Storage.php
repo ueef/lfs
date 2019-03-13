@@ -31,7 +31,7 @@ class Storage implements StorageInterface
     public function store(string $path, string $key): void
     {
         $this->mkdir($key);
-        $this->link($path, $key);
+        $this->copy($path, $key);
     }
 
     public function isStored(string $key): bool
@@ -49,7 +49,7 @@ class Storage implements StorageInterface
         return $this->root . $this->getUrl($key);
     }
 
-    protected function link(string $path, string $key): void
+    protected function copy(string $path, string $key): void
     {
         if (!@copy($path, $this->getPath($key))) {
             throw new CannotCopyException(["cannot copy \"%s\" to \"%s\"", $path, $this->getPath($key)]);
