@@ -4,8 +4,7 @@ namespace Ueef\Lfs;
 
 use Ueef\Lfs\Interfaces\StorageInterface;
 use Ueef\Lfs\Exceptions\CannotLinkException;
-use Ueef\Lfs\Exceptions\FileDoesNotExistException;
-use Ueef\Lfs\Exceptions\CannotCreateDirectoryException;
+use Ueef\Lfs\Exceptions\CannotMakeDirectoryException;
 
 class Storage implements StorageInterface
 {
@@ -19,36 +18,25 @@ class Storage implements StorageInterface
     private $key_length;
 
     /** @var integer */
-    private $creation_mode;
+    private $making_mode;
 
 
-    public function __construct(string $root, string $dir, int $keyLength = 12, int $creationMode = 0755)
+    public function __construct(string $root, string $dir, int $makingMode = 0755)
     {
         $this->dir = $this->correctPath($dir);
         $this->root = $this->correctPath($root);
-        $this->key_length = $keyLength;
-        $this->creation_mode = $creationMode;
+        $this->making_mode = $makingMode;
     }
 
-    public function store(string $srcPath): string
+    public function store(string $path, string $key): void
     {
-        if (!file_exists($srcPath)) {
-            throw new FileDoesNotExistException(["file \"%s\" doesn't exist", $srcPath]);
-        }
+        $this->mkdir($key);
+        $this->link($path, $key);
+    }
 
-        $key = $this->generateKey();
-        $dstPath = $this->getPath($key);
-
-        $dirPath = dirname($dstPath);
-        if (!is_dir($dirPath) && !@mkdir($dirPath, $this->creation_mode, true) && !is_dir($dirPath)) {
-            throw new CannotCreateDirectoryException(["cannot created directory \"%s\"", $dirPath]);
-        }
-
-        if (!@link($srcPath, $dstPath)) {
-            throw new CannotLinkException(["cannot link \"%s\" to \"%s\"", $srcPath, $dstPath]);
-        }
-
-        return $key;
+    public function isStored(string $key): bool
+    {
+        return file_exists($this->getPath($key));
     }
 
     public function getUrl(string $key): string
@@ -61,16 +49,35 @@ class Storage implements StorageInterface
         return $this->root . $this->getUrl($key);
     }
 
-    private function generateKey(): string
+    protected function link(string $path, string $key): void
+    {
+        if (!@link($path, $this->getPath($key))) {
+            throw new CannotLinkException(["cannot link \"%s\" to \"%s\"", $path, $this->getPath($key)]);
+        }
+    }
+
+    protected function mkdir(string $key): void
+    {
+        $dir = dirname($this->getPath($key));
+        if (is_dir($dir)) {
+            return;
+        }
+
+        if (!@mkdir($dir, $this->making_mode, true) && !is_dir($dir)) {
+            throw new CannotMakeDirectoryException(["cannot make directory \"%s\"", $dir]);
+        }
+    }
+
+    protected function correctPath(string $path): string
+    {
+        return '/' . trim($path, '/');
+    }
+
+    protected function generateKey(): string
     {
         $key = random_bytes($this->key_length);
         $key = bin2hex($key);
 
         return $key;
-    }
-
-    private function correctPath(string $path): string
-    {
-        return '/' . trim($path, '/');
     }
 }

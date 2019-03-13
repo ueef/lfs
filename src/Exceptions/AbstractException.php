@@ -5,9 +5,9 @@ namespace Ueef\Lfs\Exceptions;
 
 use Throwable;
 use Exception;
-use Ueef\Lfs\Interfaces\ExceptionInterface;
+use Ueef\Lfs\Interfaces\StorageExceptionInterface;
 
-abstract class AbstractException extends Exception implements ExceptionInterface
+abstract class AbstractException extends Exception implements StorageExceptionInterface
 {
     public function __construct($message = "", Throwable $previous = null)
     {
