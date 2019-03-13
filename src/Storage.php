@@ -3,7 +3,7 @@
 namespace Ueef\Lfs;
 
 use Ueef\Lfs\Interfaces\StorageInterface;
-use Ueef\Lfs\Exceptions\CannotLinkException;
+use Ueef\Lfs\Exceptions\CannotCopyException;
 use Ueef\Lfs\Exceptions\CannotMakeDirectoryException;
 
 class Storage implements StorageInterface
@@ -51,8 +51,8 @@ class Storage implements StorageInterface
 
     protected function link(string $path, string $key): void
     {
-        if (!@link($path, $this->getPath($key))) {
-            throw new CannotLinkException(["cannot link \"%s\" to \"%s\"", $path, $this->getPath($key)]);
+        if (!@copy($path, $this->getPath($key))) {
+            throw new CannotCopyException(["cannot copy \"%s\" to \"%s\"", $path, $this->getPath($key)]);
         }
     }
 
