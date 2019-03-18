@@ -15,9 +15,6 @@ class Storage implements StorageInterface
     private $dir;
 
     /** @var integer */
-    private $key_length;
-
-    /** @var integer */
     private $making_mode;
 
 
@@ -36,48 +33,60 @@ class Storage implements StorageInterface
 
     public function isStored(string $key): bool
     {
-        return file_exists($this->getPath($key));
+        return is_dir($this->getDirPath($key));
+    }
+
+    public function delete(string $key)
+    {
+        $dir = $this->getDirPath($key);
+        foreach (array_diff(scandir($dir), ['.', '..']) as $file) {
+            unlink($dir . '/' . $file);
+        }
+
+        return rmdir($dir);
     }
 
     public function getUrl(string $key): string
     {
-        return $this->dir . preg_replace('/^(.{2})(.{2})(.+)$/', '/$1/$2/$3', $key);
+        return $this->getDirUrl($key) . '/' . $key;
     }
 
     public function getPath(string $key): string
     {
-        return $this->root . $this->getUrl($key);
+        return $this->getDirPath($key) . '/' . $key;
     }
 
-    protected function copy(string $path, string $key): void
+    private function getDirUrl(string $key): string
+    {
+        return $this->dir . preg_replace('/^(.{2})(.{2})(.+)$/', '/$1/$2/$3', $key);
+    }
+
+    private function getDirPath(string $key): string
+    {
+        return $this->root . $this->getDirUrl($key);
+    }
+
+    private function copy(string $path, string $key): void
     {
         if (!@copy($path, $this->getPath($key))) {
             throw new CannotCopyException(["cannot copy \"%s\" to \"%s\"", $path, $this->getPath($key)]);
         }
     }
 
-    protected function mkdir(string $key): void
+    private function mkdir(string $key): void
     {
-        $dir = dirname($this->getPath($key));
-        if (is_dir($dir)) {
+        $path = $this->getDirPath($key);
+        if (is_dir($path)) {
             return;
         }
 
-        if (!@mkdir($dir, $this->making_mode, true) && !is_dir($dir)) {
-            throw new CannotMakeDirectoryException(["cannot make directory \"%s\"", $dir]);
+        if (!@mkdir($path, $this->making_mode, true) && !is_dir($path)) {
+            throw new CannotMakeDirectoryException(["cannot make directory \"%s\"", $path]);
         }
     }
 
-    protected function correctPath(string $path): string
+    private function correctPath(string $path): string
     {
         return '/' . trim($path, '/');
-    }
-
-    protected function generateKey(): string
-    {
-        $key = random_bytes($this->key_length);
-        $key = bin2hex($key);
-
-        return $key;
     }
 }
