@@ -58,7 +58,7 @@ class Storage implements StorageInterface
 
     private function getDirUrl(string $key): string
     {
-        return $this->dir . preg_replace('/^(.{2})(.{2})(.+)$/', '/$1/$2/$3', $key);
+        return $this->dir . '/' . substr($key, 0, 2) . '/' . substr($key, 2, 2) . '/' . substr($key, 4);
     }
 
     private function getDirPath(string $key): string
