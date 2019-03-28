@@ -33,37 +33,35 @@ class Storage implements StorageInterface
 
     public function isStored(string $key): bool
     {
-        return is_dir($this->getDirPath($key));
+        return file_exists($this->getPath($key));
     }
 
-    public function delete(string $key)
+    public function delete(string $key): void
     {
-        $dir = $this->getDirPath($key);
-        foreach (array_diff(scandir($dir), ['.', '..']) as $file) {
-            unlink($dir . '/' . $file);
-        }
+        $path = dirname($this->getPath($key));
+        $dir = opendir($path);
+        while (true) {
+            $file = readdir($dir);
+            if (false === $file) {
+                break;
+            } elseif ('.' == $file || '..' == $file) {
+                continue;
+            }
 
-        return rmdir($dir);
+            if (0 == strpos($file, $key)) {
+                unlink($path . '/' . $file);
+            }
+        }
     }
 
     public function getUrl(string $key): string
     {
-        return $this->getDirUrl($key) . '/' . $key;
+        return $this->dir . '/' . substr($key, 0, 2) . '/' . $key;
     }
 
     public function getPath(string $key): string
     {
-        return $this->getDirPath($key) . '/' . $key;
-    }
-
-    private function getDirUrl(string $key): string
-    {
-        return $this->dir . '/' . substr($key, 0, 2) . '/' . substr($key, 2, 2) . '/' . substr($key, 4);
-    }
-
-    private function getDirPath(string $key): string
-    {
-        return $this->root . $this->getDirUrl($key);
+        return $this->root . $this->getUrl($key);
     }
 
     private function copy(string $path, string $key): void
@@ -75,12 +73,8 @@ class Storage implements StorageInterface
 
     private function mkdir(string $key): void
     {
-        $path = $this->getDirPath($key);
-        if (is_dir($path)) {
-            return;
-        }
-
-        if (!@mkdir($path, $this->making_mode, true) && !is_dir($path)) {
+        $path = dirname($this->getPath($key));
+        if (!is_dir($path) && !@mkdir($path, $this->making_mode, true) && !is_dir($path)) {
             throw new CannotMakeDirectoryException(["cannot make directory \"%s\"", $path]);
         }
     }
