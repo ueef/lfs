@@ -4,8 +4,9 @@
   "license": "MIT",
   "description": "",
   "require": {
-    "php": ">=7.1",
-    "ext-json": "*"
+    "php": ">=7.4",
+    "ext-json": "*",
+    "ueef/paths": "^0.1"
   },
   "autoload": {
     "psr-4": {

@@ -1,34 +1,45 @@
 <?php
 
-namespace Ueef\Lfs;
+namespace Ueef\Lfs\Storages;
 
+use Throwable;
+use Exception;
 use Ueef\Lfs\Interfaces\StorageInterface;
-use Ueef\Lfs\Exceptions\CannotCopyException;
-use Ueef\Lfs\Exceptions\CannotMakeDirectoryException;
+use Ueef\Lfs\Interfaces\GeneratorInterface;
+use Ueef\Paths\Interfaces\DirInterface;
 
 class Storage implements StorageInterface
 {
-    /** @var string */
-    private $root;
+    private DirInterface       $dir;
+    private GeneratorInterface $generator;
+    private int                $levelNumber;
+    private int                $levelLength;
 
-    /** @var string */
-    private $dir;
-
-    /** @var integer */
-    private $making_mode;
-
-
-    public function __construct(string $root, string $dir, int $makingMode = 0755)
+    public function __construct(DirInterface $dir, GeneratorInterface $generator, int $levelNumber = 2, int $levelLength = 2)
     {
-        $this->dir = $this->correctPath($dir);
-        $this->root = $this->correctPath($root);
-        $this->making_mode = $makingMode;
+        $this->dir = $dir;
+        $this->generator = $generator;
+        $this->levelNumber = $levelNumber;
+        $this->levelLength = $levelLength;
     }
 
-    public function store(string $path, string $key): void
+    public function store(string $path, ?string $key): string
     {
-        $this->mkdir($key);
-        $this->copy($path, $key);
+        if (null === $key) {
+            $key = $this->generator->generate();
+        }
+
+        try {
+            $success = copy($path, $this->getPath($key));
+        } catch (Throwable $e) {
+            throw new Exception(sprintf("cannot copy a file \"%s\" to \"%s\"", $path, $this->getPath($key)), 0, $e);
+        }
+
+        if (!$success) {
+            throw new Exception(sprintf("cannot copy a file \"%s\" to \"%s\"", $path, $this->getPath($key)));
+        }
+
+        return $key;
     }
 
     public function isStored(string $key): bool
@@ -36,51 +47,27 @@ class Storage implements StorageInterface
         return file_exists($this->getPath($key));
     }
 
-    public function delete(string $key): void
-    {
-        $path = dirname($this->getPath($key));
-        $dir = opendir($path);
-        while (true) {
-            $file = readdir($dir);
-            if (false === $file) {
-                break;
-            } elseif ('.' == $file || '..' == $file) {
-                continue;
-            }
-
-            if (0 == strpos($file, $key)) {
-                unlink($path . '/' . $file);
-            }
-        }
-    }
-
     public function getUrl(string $key): string
     {
-        return $this->dir . '/' . substr($key, 0, 2) . '/' . $key;
+        return $this->dir->getUrl($key, $this->getDir($key));
     }
 
     public function getPath(string $key): string
     {
-        return $this->root . $this->getUrl($key);
+        return $this->dir->getPath($key, $this->getDir($key));
     }
 
-    private function copy(string $path, string $key): void
+    private function getDir(string $key): string
     {
-        if (!@copy($path, $this->getPath($key))) {
-            throw new CannotCopyException(["cannot copy \"%s\" to \"%s\"", $path, $this->getPath($key)]);
+        if (strlen($key) < $this->levelNumber * $this->levelLength) {
+            throw new Exception(sprintf("the key \"%s\" is too short, the min length of a key is %d", $key, $this->levelNumber * $this->levelLength));
         }
-    }
 
-    private function mkdir(string $key): void
-    {
-        $path = dirname($this->getPath($key));
-        if (!is_dir($path) && !@mkdir($path, $this->making_mode, true) && !is_dir($path)) {
-            throw new CannotMakeDirectoryException(["cannot make directory \"%s\"", $path]);
+        $dir = "";
+        for ($i=0; $i<$this->levelNumber; $i++) {
+            $dir .= "/" . substr($key, $i*$this->levelLength, $this->levelLength);
         }
-    }
 
-    private function correctPath(string $path): string
-    {
-        return '/' . trim($path, '/');
+        return $dir;
     }
 }
