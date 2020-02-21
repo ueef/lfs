@@ -5,7 +5,7 @@ namespace Ueef\Lfs\Interfaces;
 
 interface StorageInterface
 {
-    public function store(string $path, ?string $key): string;
+    public function store(string $path, ?string $key = null): string;
     public function getUrl(string $key): string;
     public function getPath(string $key): string;
     public function isStored(string $key): bool;

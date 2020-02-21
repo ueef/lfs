@@ -23,7 +23,7 @@ class Storage implements StorageInterface
         $this->levelLength = $levelLength;
     }
 
-    public function store(string $path, ?string $key): string
+    public function store(string $path, ?string $key = null): string
     {
         if (null === $key) {
             $key = $this->generator->generate();
