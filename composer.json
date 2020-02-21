@@ -6,7 +6,7 @@
   "require": {
     "php": ">=7.4",
     "ext-json": "*",
-    "ueef/paths": "^v0.1"
+    "ueef/paths": "^0.1"
   },
   "autoload": {
     "psr-4": {

@@ -1,6 +1,6 @@
 <?php
 
-namespace Ueef\Lfs\Storages;
+namespace Ueef\Lfs;
 
 use Throwable;
 use Exception;
