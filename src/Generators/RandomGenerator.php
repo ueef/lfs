@@ -19,8 +19,8 @@ class RandomGenerator implements GeneratorInterface
     {
         $key = random_bytes($this->length*2);
         $key = base64_encode($key);
-        $key = strtr($key, '+/', '-_');
         $key = rtrim($key, '=');
+        $key = strtr($key, ['+' => '', '/' => '']);
 
         return substr($key, 0, $this->length);
     }
