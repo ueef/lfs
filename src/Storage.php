@@ -23,7 +23,7 @@ class Storage implements StorageInterface
         $this->levelLength = $levelLength;
     }
 
-    public function store(string $path, ?string $key = null): string
+    public function storeFile(string $path, ?string $key = null): string
     {
         if (null === $key) {
             $key = $this->generator->generate();
@@ -37,6 +37,49 @@ class Storage implements StorageInterface
 
         if (!$success) {
             throw new Exception(sprintf("cannot copy a file \"%s\" to \"%s\"", $path, $this->getPath($key)));
+        }
+
+        return $key;
+    }
+
+    public function storeStream($stream, ?string $key = null): string
+    {
+        $type = get_resource_type($stream);
+        if ("stream" !== $type) {
+            throw new Exception(sprintf("a stream must be a resource of type stream a resource of type \"%s\" given", $type));
+        }
+
+        if (null === $key) {
+            $key = $this->generator->generate();
+        }
+
+        try {
+            $success = file_put_contents($this->getPath($key), $stream, LOCK_EX);
+        } catch (Throwable $e) {
+            throw new Exception(sprintf("cannot write a stream to a file \"%s\"", $this->getPath($key)), 0, $e);
+        }
+
+        if (!$success) {
+            throw new Exception(sprintf("cannot write a stream to a file \"%s\"", $this->getPath($key)));
+        }
+
+        return $key;
+    }
+
+    public function storeBinary(string $data, ?string $key = null): string
+    {
+        if (null === $key) {
+            $key = $this->generator->generate();
+        }
+
+        try {
+            $success = file_put_contents($this->getPath($key), $data, LOCK_EX);
+        } catch (Throwable $e) {
+            throw new Exception(sprintf("cannot write a binary to a file \"%s\"", $this->getPath($key)), 0, $e);
+        }
+
+        if (!$success) {
+            throw new Exception(sprintf("cannot write a binary to a file \"%s\"", $this->getPath($key)));
         }
 
         return $key;
